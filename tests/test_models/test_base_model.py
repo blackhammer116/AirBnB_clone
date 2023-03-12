@@ -1,112 +1,89 @@
 #!/usr/bin/python3
-
-"""unit test module for base model class
+"""
+   Test module for the class base_model.py
 """
 
-from datetime import datetime
 import unittest
 from models.base_model import BaseModel
-import pep8
+from datetime import datetime
+import json
+import time
 
 
-class TestBaseClass(unittest.TestCase):
-    """set of tests for base model class
+class TestBaseModel(unittest.TestCase):
+    """
+    Class to test our BaseModel class
     """
 
-    def setUp(self):
-        """setup for the test
+    def test_uuid(self):
         """
-        pass
+        Test that uuid's for our class are unique
+        """
+        obj1 = BaseModel()
+        obj2 = BaseModel()
+        self.assertIsInstance(obj1.id, str)
+        self.assertRegex(obj1.id,
+                         r"^[0-9ea-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$")
+        self.assertNotEqual(obj1.id, obj2.id)
 
-    def test_type_of_id(self):
-        """check the type of id
+    def test_time(self):
         """
-        model = BaseModel()
-        self.assertTrue(type(model.id) == str)
-
-    def test_type_of_datetime(self):
-        """check the type of created_at and updated_at
+        Test the datetime object of BaseModel for time
         """
-        model = BaseModel()
-        self.assertTrue(type(model.created_at) == datetime)
-        self.assertTrue(type(model.updated_at) == datetime)
+        obj1 = BaseModel()
+        self.assertIsInstance(obj1.created_at, datetime)
+        self.assertIsInstance(obj1.updated_at, datetime)
+        current_time = datetime.now()
+        self.assertLess(obj1.created_at, current_time)
+        self.assertLess(obj1.updated_at, current_time)
 
     def test_str(self):
-        """check the __str__ method
         """
-        model = BaseModel()
-        self.assertEqual(model.__str__(), "[" + model.__class__.__name__ + "]"
-                         " (" + model.id + ") " + str(model.__dict__))
-
-    def test_uuid_generation(self):
-        """check the generation of uuid
+        test the __str__ magic method of our class
         """
-        model1 = BaseModel()
-        model2 = BaseModel()
-        model3 = BaseModel()
-        self.assertTrue(model1.id != model2.id)
-        self.assertTrue(model2.id != model3.id)
-        self.assertTrue(model3.id != model1.id)
+        obj1 = BaseModel()
+        output = str(obj1)
+        self.assertTrue(output.startswith("[" + obj1.__class__.__name__ + "]"))
+        self.assertTrue(output.endswith(str(obj1.__dict__)))
+        self.assertRegex(output[output.find("("):output.find(")") + 1],
+                         r"^\([0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}\)$")
 
-    def test_to_dict(self):
-        """check to_dict method
+    def test_save(self):
         """
-        model = BaseModel()
-        my_model = model.to_dict()
-        self.assertTrue(type(my_model["created_at"] == str))
-        self.assertTrue(type(my_model["updated_at"] == str))
-        self.assertTrue(type(model.created_at) == datetime)
-        self.assertTrue(type(model.updated_at) == datetime)
-        self.assertEqual(my_model["created_at"], model.created_at.isoformat())
-        self.assertEqual(my_model["updated_at"], model.updated_at.isoformat())
-
-    def test_none_dict(self):
-        """check for None dict
+        Test the save method of the Basemodel class
         """
-        model = BaseModel(None)
-        self.assertTrue(type(model.id) == str)
-        self.assertTrue(type(model.created_at) == datetime)
-        self.assertTrue(type(model.updated_at) == datetime)
 
-    def test_kwargs_with_dict(self):
-        """check when kwargs not empty
+        obj1 = BaseModel()
+        time.sleep(2)
+        obj1.save()
+        self.assertLess(obj1.created_at, obj1.updated_at)
+
+    def test_dict(self):
         """
-        my_model = BaseModel()
-        my_model_json = my_model.to_dict()
-        my_new_model = BaseModel(**my_model_json)
-        self.assertEqual(my_model_json, my_new_model.to_dict())
-        self.assertTrue(type(my_new_model.id) == str)
-        self.assertTrue(type(my_new_model.created_at) == datetime)
-        self.assertTrue(type(my_new_model.updated_at) == datetime)
-
-    def test_kwargs_with_emp_dict(self):
-        """check when kwargs is empty
+        Test the to_dict method of BaseModel
         """
-        my_dict = {}
-        my_model = BaseModel(**my_dict)
-        self.assertTrue(type(my_model.id) == str)
-        self.assertTrue(type(my_model.created_at) == datetime)
-        self.assertTrue(type(my_model.updated_at) == datetime)
 
-    def test_pep8(self):
-        """check python code style
+        obj1 = BaseModel()
+        temp_dict = obj1.__dict__.copy()
+        temp_dict['created_at'] = temp_dict['created_at'].isoformat()
+        temp_dict['updated_at'] = temp_dict['updated_at'].isoformat()
+        temp_dict['__class__'] = obj1.__class__.__name__
+        self.assertEqual(temp_dict, obj1.to_dict())
+
+    def test_kwargs(self):
         """
-        py_code_style = pep8.StyleGuide(quiet=True)
-        check = py_code_style.check_files(
-            ['models/base_model.py', 'tests/test_models/test_base_model.py'])
-        self.assertEqual(check.total_errors, 0, "errors found.")
-
-    def test_doc_base_model_class(self):
-        """check base model class documentation
+        Test the initialization of BaseModel via dictionary
         """
-        self.assertTrue(len(BaseModel.__doc__) > 0)
 
-    def test_doc_amenity_methods(self):
-        """check base_model's methods documentation
-        """
-        for method in dir(BaseModel):
-            self.assertTrue(len(method.__doc__) > 0)
+        obj1 = BaseModel()
+        obj2 = BaseModel(**obj1.to_dict())
+        self.assertIsInstance(obj2.id, str)
+        self.assertIsInstance(obj2.created_at, datetime)
+        self.assertIsInstance(obj2.updated_at, datetime)
 
+        self.assertEqual(obj1.id, obj2.id)
+        self.assertEqual(obj1.created_at, obj2.created_at)
+        self.assertEqual(obj1.updated_at, obj2.updated_at)
 
-if __name__ == '__main__':
-    unittest.main()
+        with self.assertRaises(KeyError):
+            obj2.__dict__['__class__']
