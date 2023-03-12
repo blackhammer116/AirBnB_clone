@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-Module that holds the command interpreter for the Airbnb Console
+Module to hold the command interpreter for the Airbnb Console
 """
 
 import readline
